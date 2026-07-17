@@ -46,6 +46,11 @@ struct Value {
   }
 };
 
+void zero_grad(std::shared_ptr<Value> grad_matrix) {
+  grad_matrix->grad =
+      Matrix(grad_matrix->grad.rows, grad_matrix->grad.cols, false);
+}
+
 std::shared_ptr<Value> matmul(std::shared_ptr<Value> a,
                               std::shared_ptr<Value> b) {
   auto out = std::make_shared<Value>(a->data * b->data,

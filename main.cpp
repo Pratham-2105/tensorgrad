@@ -1,208 +1,95 @@
+#include "matrix.hpp"
+#include "mnist.hpp"
 #include "value.hpp"
-#include <iostream>
+#include <chrono>
 #include <memory>
 
 int main() {
-  /*
-    Matrix m(2, 3, false);
-    m.at(0, 0) = 1;
-    m.at(0, 1) = 2;
-    m.at(0, 2) = 3;
-    m.at(1, 0) = 4;
-    m.at(1, 1) = 5;
-    m.at(1, 2) = 6;
+  auto start = std::chrono::high_resolution_clock::now();
 
-    Value v(m);
+  std::vector<Matrix> train_images =
+      load_images("data/train-images-idx3-ubyte");
+  std::vector<Matrix> train_labels =
+      load_labels("data/train-labels-idx1-ubyte");
 
-    std::cout << "data:\n";
-    v.data.print_matrix();
+  Matrix W1(128, 784, true);
+  Matrix B1(128, 1, false);
 
-    std::cout << "grad:\n";
-    v.grad.print_matrix();
+  Matrix W2(64, 128, true);
+  Matrix B2(64, 1, false);
 
-    */
+  Matrix W3(10, 64, true);
+  Matrix B3(10, 1, false);
 
-  /*
-  Matrix A(2, 3, false);
-  A.at(0, 0) = 1;
-  A.at(0, 1) = 2;
-  A.at(0, 2) = 3;
-  A.at(1, 0) = 4;
-  A.at(1, 1) = 5;
-  A.at(1, 2) = 6;
+  auto w1 = std::make_shared<Value>(W1);
+  auto b1 = std::make_shared<Value>(B1);
+  auto w2 = std::make_shared<Value>(W2);
+  auto b2 = std::make_shared<Value>(B2);
+  auto w3 = std::make_shared<Value>(W3);
+  auto b3 = std::make_shared<Value>(B3);
 
-  Matrix B(3, 2, false);
-  B.at(0, 0) = 7;
-  B.at(0, 1) = 8;
-  B.at(1, 0) = 9;
-  B.at(1, 1) = 10;
-  B.at(2, 0) = 11;
-  B.at(2, 1) = 12;
+  std::vector<std::shared_ptr<Value>> params = {w1, b1, w2, b2, w3, b3};
 
-  Matrix C = A * B;
+  Scalar lr = 0.01;
+  i64 epochs = 10;
 
-  Matrix c_grad(C.rows, C.cols, false);
-  for (auto &v : c_grad.matrix)
-    v = 1.0;
+  size_t N = train_images.size();
 
-  Matrix a_grad = c_grad * (B.transpose());
-  Matrix b_grad = (A.transpose()) * c_grad;
+  for (i64 epoch = 0; epoch < epochs; ++epoch) {
+    Scalar total_loss = 0.0;
+    i64 correct = 0;
 
-  std::cout << "a_grad (want 2x3):\n";
-  a_grad.print_matrix();
-  std::cout << "b_grad (want 3x2):\n";
-  b_grad.print_matrix();
+    for (size_t ex = 0; ex < N; ++ex) {
+      Matrix current_image = train_images[ex];
+      Matrix current_label = train_labels[ex];
 
-  auto a = std::make_shared<Value>(A);
-  auto b = std::make_shared<Value>(B);
-  auto c = matmul(a, b);
+      auto current_img = std::make_shared<Value>(current_image);
 
-  for (auto &v : c->grad.matrix)
-    v = 1.0; // seed c's grad = ones
-  c->_backward();
+      for (auto &p : params) {
+        p->grad = Matrix(p->grad.rows, p->grad.cols, false);
+      }
 
-  std::cout << "a->grad (want 2x3):\n";
-  a->grad.print_matrix();
-  std::cout << "b->grad (want 3x2):\n";
-  b->grad.print_matrix();
-*/
+      auto h1 = tanh_(add(matmul(w1, current_img), b1));
+      auto h2 = tanh_(add(matmul(w2, h1), b2));
 
-  /*
-  Matrix A(2, 2, false);
-  A.at(0, 0) = 1;
-  A.at(0, 1) = 2;
-  A.at(1, 0) = 3;
-  A.at(1, 1) = 4;
-  Matrix B(2, 2, false);
-  B.at(0, 0) = 5;
-  B.at(0, 1) = 6;
-  B.at(1, 0) = 7;
-  B.at(1, 1) = 8;
+      auto logits = add(matmul(w3, h2), b3);
 
-  auto a = std::make_shared<Value>(A);
-  auto b = std::make_shared<Value>(B);
-  auto c = add(a, b);
+      auto loss = cross_entropy(logits, current_label);
+      loss->backward();
 
-  std::cout << "c->data (want 6 8 / 10 12):\n";
-  c->data.print_matrix();
+      for (auto p : params) {
+        p->data = p->data - p->grad.scalar_multiply(lr);
+      }
 
-  c->grad.at(0, 0) = 1;
-  c->grad.at(0, 1) = 2;
-  c->grad.at(1, 0) = 3;
-  c->grad.at(1, 1) = 4;
-  c->_backward();
+      total_loss += loss->data.at(0, 0);
+      if (argmax(logits->data) == argmax(current_label))
+        correct++;
+    }
+    std::cout << "epoch: " << epoch << "   loss: " << total_loss / N
+              << "   acc: " << correct * 100.0 / N << "%\n";
+  }
 
-  std::cout << "a->grad (want 1 2 / 3 4):\n";
-  a->grad.print_matrix();
-  std::cout << "b->grad (want 1 2 / 3 4):\n";
-  b->grad.print_matrix();
-*/
+  auto end = std::chrono::high_resolution_clock::now();
+  auto seconds =
+      std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+  std::cout << "training took " << seconds << " seconds\n";
 
-  /*
-    Matrix A(1, 3, false);
-    A.at(0, 0) = 0;
-    A.at(0, 1) = 1;
-    A.at(0, 2) = -1;
+  std::vector<Matrix> test_images = load_images("data/t10k-images-idx3-ubyte");
+  std::vector<Matrix> test_labels = load_labels("data/t10k-labels-idx1-ubyte");
 
-    auto a = std::make_shared<Value>(A);
-    auto c = tanh_(a);
+  i64 test_correct = 0;
+  for (size_t ex = 0; ex < test_images.size(); ++ex) {
+    auto x = std::make_shared<Value>(test_images[ex]);
+    auto h1 = tanh_(add(matmul(w1, x), b1));
+    auto h2 = tanh_(add(matmul(w2, h1), b2));
+    auto o = add(matmul(w3, h2), b3); // o is a Value
 
-    std::cout << "c->data (want 0  0.761594  -0.761594):\n";
-    c->data.print_matrix();
+    if (argmax(o->data) == argmax(test_labels[ex])) // read ->data for argmax
+      test_correct++;
+  }
 
-    for (auto &v : c->grad.matrix)
-      v = 1.0;
-    c->_backward();
-
-    std::cout << "a->grad (want 1  0.419974  0.419974):\n";
-    a->grad.print_matrix();
-  */
-
-  /*
-  Matrix A(1, 3, false);
-  A.at(0, 0) = 1;
-  A.at(0, 1) = 2;
-  A.at(0, 2) = 3;
-
-  Matrix W(3, 2, false);
-  W.at(0, 0) = 0.1;
-  W.at(0, 1) = -0.2;
-  W.at(1, 0) = 0.0;
-  W.at(1, 1) = 0.1;
-  W.at(2, 0) = -0.1;
-  W.at(2, 1) = 0.0;
-
-  auto a = std::make_shared<Value>(A);
-  auto w = std::make_shared<Value>(W);
-  auto c = tanh_(matmul(a, w));
-
-  std::cout << "c->data:\n";
-  c->data.print_matrix();
-  c->backward();
-  std::cout << "a->grad:\n";
-  a->grad.print_matrix();
-  std::cout << "w->grad:\n";
-  w->grad.print_matrix();
-
-  Matrix X(1, 3, false);
-  X.at(0, 0) = 0;
-  X.at(0, 1) = 1;
-  X.at(0, 2) = -1;
-
-  auto x = std::make_shared<Value>(X);
-  auto t = tanh_(x);
-  auto d = add(t, t);
-
-  std::cout << "d->data:\n";
-  d->data.print_matrix();
-  d->backward();
-  std::cout << "t->grad:\n";
-  t->grad.print_matrix();
-  std::cout << "x->grad:\n";
-  x->;grad.print_matrix()
-
-  */
-
-  /*
-  Matrix A(1, 2, false);
-  A.at(0, 0) = 3;
-  A.at(0, 1) = 5;
-
-  Matrix W(2, 1, false);
-  W.at(0, 0) = 2;
-  W.at(1, 0) = 4;
-
-  auto a = std::make_shared<Value>(A);
-  auto w = std::make_shared<Value>(W);
-  auto out = matmul(a, w);
-  out->backward();
-
-  std::cout << "a->grad = \n";
-  a->grad.print_matrix();
-  std::cout << "w->grad = \n";
-  w->grad.print_matrix();
-*/
-
-  Matrix logits_data(1, 3, false);
-  logits_data.at(0, 0) = 0;
-  logits_data.at(0, 1) = 0;
-  logits_data.at(0, 2) = 0;
-
-  Matrix target(1, 3, false);
-  target.at(0, 0) = 1; // class 0 is the correct one
-  target.at(0, 1) = 0;
-  target.at(0, 2) = 0;
-
-  auto logits = std::make_shared<Value>(logits_data);
-  auto loss = cross_entropy(logits, target);
-
-  std::cout << "loss (want 1.0986):\n";
-  loss->data.print_matrix();
-
-  loss->backward();
-
-  std::cout << "logits->grad (want -0.666667  0.333333  0.333333):\n";
-  logits->grad.print_matrix();
+  Scalar test_acc = (Scalar)test_correct / test_images.size() * 100;
+  std::cout << "TEST accuracy: " << test_acc << "%\n";
 
   return 0;
 }

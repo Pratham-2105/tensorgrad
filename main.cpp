@@ -118,6 +118,7 @@ int main() {
     a->grad.print_matrix();
   */
 
+  /*
   Matrix A(1, 3, false);
   A.at(0, 0) = 1;
   A.at(0, 1) = 2;
@@ -158,7 +159,50 @@ int main() {
   std::cout << "t->grad:\n";
   t->grad.print_matrix();
   std::cout << "x->grad:\n";
-  x->grad.print_matrix();
+  x->;grad.print_matrix()
+
+  */
+
+  /*
+  Matrix A(1, 2, false);
+  A.at(0, 0) = 3;
+  A.at(0, 1) = 5;
+
+  Matrix W(2, 1, false);
+  W.at(0, 0) = 2;
+  W.at(1, 0) = 4;
+
+  auto a = std::make_shared<Value>(A);
+  auto w = std::make_shared<Value>(W);
+  auto out = matmul(a, w);
+  out->backward();
+
+  std::cout << "a->grad = \n";
+  a->grad.print_matrix();
+  std::cout << "w->grad = \n";
+  w->grad.print_matrix();
+*/
+
+  Matrix logits_data(1, 3, false);
+  logits_data.at(0, 0) = 0;
+  logits_data.at(0, 1) = 0;
+  logits_data.at(0, 2) = 0;
+
+  Matrix target(1, 3, false);
+  target.at(0, 0) = 1; // class 0 is the correct one
+  target.at(0, 1) = 0;
+  target.at(0, 2) = 0;
+
+  auto logits = std::make_shared<Value>(logits_data);
+  auto loss = cross_entropy(logits, target);
+
+  std::cout << "loss (want 1.0986):\n";
+  loss->data.print_matrix();
+
+  loss->backward();
+
+  std::cout << "logits->grad (want -0.666667  0.333333  0.333333):\n";
+  logits->grad.print_matrix();
 
   return 0;
 }

@@ -1,6 +1,6 @@
 # tensorgrad
 
-A tensor automatic differentiation engine written from scratch in C++. No libraries, no frameworks — just `std::shared_ptr`, a graph of nodes, and the chain rule, except every node holds a whole matrix instead of a single number. On top of it, the goal is a character-level language model that learns to invent names, trained entirely by gradients this engine computes for itself.
+A tensor automatic differentiation engine written from scratch in C++. No libraries, no frameworks — just `std::shared_ptr`, a graph of nodes, and the chain rule, except every node holds a whole matrix instead of a single number. It trains a real network on MNIST, saves the trained model to disk, and loads it back to make predictions on demand.
 
 This is the third in a line, and the progression is the whole point:
 
@@ -8,7 +8,7 @@ This is the third in a line, and the progression is the whole point:
 * micrograd — an engine that works out backpropagation automatically, at runtime, for any expression you build — but one scalar per node, far too small to train anything real.
 * tensorgrad — the same automatic engine as micrograd, but every node holds a matrix. A matrix multiply becomes a single node with one backward rule instead of thousands of scalar nodes. That's the jump from toy to usable: enough to actually train a model.
 
-CNeural hand-coded the gradients; micrograd automated them for scalars; tensorgrad automates them for tensors — and then uses that to train a real character-level model, with no ML libraries anywhere in the stack.
+CNeural hand-coded the gradients; micrograd automated them for scalars; tensorgrad automates them for tensors — and then uses that to train a real network, with no ML libraries anywhere in the stack.
 
 ## The idea
 
@@ -18,31 +18,33 @@ The graph machinery is unchanged from micrograd — the `shared_ptr` edges, the 
 
 ## Results
 
-The engine was validated by training a classifier on MNIST — a 784 → 128 → 64 → 10 network, trained entirely through the automatic backward pass instead of hand-coded gradients. Ten epochs over 60,000 images:
+The engine was validated by training a classifier on MNIST — a 784 → 128 → 64 → 10 network, trained entirely through the automatic backward pass instead of hand-coded gradients. Eight epochs over 60,000 images:
 
 ```
-epoch: 0   loss: 0.2957   acc: 91.06%
-epoch: 5   loss: 0.0467   acc: 98.62%
-epoch: 9   loss: 0.0201   acc: 99.44%
-training took 461 seconds
-TEST accuracy: 96.88%
+epoch: 0   loss: 0.3003   acc: 90.91%
+epoch: 4   loss: 0.0578   acc: 98.23%
+epoch: 7   loss: 0.0284   acc: 99.14%
+training took 399 seconds
+TEST accuracy: 96.11%
 ```
 
 The point wasn't the accuracy — CNeural already reached it by hand. The point is that this time no gradients were derived or written by hand. The engine computed every one of them automatically, and the network still learned to recognize digits. That's what proves the autograd is correct end to end: the same result, but the calculus is now the program's job instead of mine.
 
 ## Running it
 
-You need the four MNIST files (train-images, train-labels, t10k-images, t10k-labels) in a `data/` folder. Then:
+You need the four MNIST files (train-images, train-labels, t10k-images, t10k-labels) in a `data/` folder. Then to train:
 
 ```
 make run
 ```
 
-or directly:
+This trains the network and writes the six weight matrices to `model/`. Once a model is saved, you can make single predictions without retraining:
 
 ```
-g++ -std=c++17 -Wall -Wextra -O2 main.cpp -o tensorgrad && ./tensorgrad
+make predict
 ```
+
+`predict` loads the saved weights, picks a random test image, and prints what the network thinks it is versus the true label. A trained `model/` is included, so `make predict` works straight after cloning — no need to train first.
 
 Only a C++17 compiler is required. Nothing else.
 
@@ -53,7 +55,9 @@ The code is header-only, each file doing one job:
 * **matrix.hpp** — the math, carried over from CNeural. A `Matrix` stored in a flat row-major array, with the operations backprop needs: matrix multiply, add, subtract, transpose, element-wise apply, and Hadamard product. Every operation returns a new matrix instead of modifying the old one.
 * **value.hpp** — the engine. A `Value` node holding its data and gradient (both matrices), the child nodes it was built from, and a closure (`_backward`) that pushes gradient to those children. The operations — `matmul`, `add`, `tanh_`, and a fused `cross_entropy` (softmax + cross-entropy loss) — each build a new node, record its children, and attach the right matrix backward rule. `backward()` topologically sorts the graph and walks it in reverse, firing every closure.
 * **mnist.hpp** — reading the data, reused from CNeural. Parses the raw binary MNIST files (big-endian headers), loads images as 784×1 columns scaled to 0–1, one-hot encodes the labels, and picks the network's best guess with argmax.
-* **main.cpp** — the training program. Loads the data, builds the network's parameters, and runs the loop: for each image, zero the gradients, forward pass, `backward()`, then nudge every parameter against its gradient. Reports loss and accuracy per epoch, then test accuracy at the end.
+* **serialize.hpp** — saving and loading. `save_matrix` writes a matrix as plain text (its shape, then its values at full precision); `load_matrix` reads it back. That's all a saved model is: six matrices on disk.
+* **main.cpp** — the training program. Loads the data, builds the parameters, runs the loop (zero the gradients, forward pass, `backward()`, step every parameter against its gradient), reports loss and accuracy per epoch, then saves the trained weights to `model/`.
+* **predict.cpp** — inference. Loads the saved weights, runs a single forward pass on one test image, and reports the prediction. No training, no backward pass — just the trained network answering.
 
 ## How the learning works
 
@@ -72,4 +76,4 @@ Those are CNeural's BP1–BP4, generalized and wired into the graph automaticall
 
 I built this one piece at a time, checking each operation on small matrices I could work out by hand before moving on — the matmul backward against a hand-computed gradient, the shared-node case to confirm gradients accumulate, and the whole engine cross-checked against micrograd (the scalar version) on the same tiny expression, since two engines that share no code agreeing is the strongest proof it's right. The rule throughout was to look up how something works when I got stuck, but never to copy a finished solution.
 
-tensorgrad extends the micrograd idea (from Andrej Karpathy's *Neural Networks: Zero to Hero*) from scalars to tensors; the name generator to come follows the design of his *makemore*. The matrix backpropagation comes from my own CNeural.
+tensorgrad extends the micrograd idea (from Andrej Karpathy's *Neural Networks: Zero to Hero*) from scalars to tensors. The matrix backpropagation comes from my own CNeural.

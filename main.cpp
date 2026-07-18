@@ -1,5 +1,6 @@
 #include "matrix.hpp"
 #include "mnist.hpp"
+#include "serialize.hpp"
 #include "value.hpp"
 #include <chrono>
 #include <memory>
@@ -68,6 +69,13 @@ int main() {
     std::cout << "epoch: " << epoch << "   loss: " << total_loss / N
               << "   acc: " << correct * 100.0 / N << "%\n";
   }
+
+  save_matrix(w1->data, "model/w1.txt");
+  save_matrix(b1->data, "model/b1.txt");
+  save_matrix(w2->data, "model/w2.txt");
+  save_matrix(b2->data, "model/b2.txt");
+  save_matrix(w3->data, "model/w3.txt");
+  save_matrix(b3->data, "model/b3.txt");
 
   auto end = std::chrono::high_resolution_clock::now();
   auto seconds =

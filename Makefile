@@ -1,16 +1,18 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -g
-TARGET   := tensorgrad
-SRCS     := main.cpp
-HEADERS  := matrix.hpp value.hpp
+CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -O2 -g
+HEADERS  := matrix.hpp value.hpp mnist.hpp serialize.hpp
 
-$(TARGET): $(SRCS) $(HEADERS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRCS)
+tensorgrad: main.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -o tensorgrad main.cpp
 
-run: $(TARGET)
-	./$(TARGET)
+run: tensorgrad
+	./tensorgrad
+
+predict: predict.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -o predict predict.cpp
+	./predict
 
 clean:
-	rm -f $(TARGET)
+	rm -f tensorgrad predict
 
-.PHONY: run clean
+.PHONY: run predict clean

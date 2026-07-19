@@ -44,5 +44,33 @@ int main() {
 
   std::cout << "total   = " << total << "  (expect 228146)\n";
 
+  std::vector<std::vector<f32>> P(27, std::vector<f32>(27, 0.0));
+
+  for (size_t i = 0; i < N.size(); ++i) {
+    i32 sum = 0;
+
+    for (size_t j = 0; j < N[i].size(); ++j) {
+      sum += N[i][j];
+    }
+
+    if (sum == 0)
+      continue;
+
+    for (size_t j = 0; j < N[i].size(); ++j) {
+      P[i][j] = static_cast<float>(N[i][j]) / static_cast<float>(sum);
+    }
+  }
+
+  double row0 = 0.0, row1 = 0.0;
+  for (int j = 0; j < 27; ++j)
+    row0 += P[0][j];
+  for (int j = 0; j < 27; ++j)
+    row1 += P[1][j];
+
+  std::cout << "row 0 sum = " << row0 << "  (expect ~1.0)\n";
+  std::cout << "row 1 sum = " << row1 << "  (expect ~1.0)\n";
+  std::cout << "P[.][e]   = " << P[0][5] << "  (expect ~0.0478)\n";
+  std::cout << "P[a][.]   = " << P[1][0] << "  (expect ~0.1961)\n";
+
   return 0;
 }

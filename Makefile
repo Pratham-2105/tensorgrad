@@ -12,7 +12,11 @@ predict: predict.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o predict predict.cpp
 	./predict
 
-clean:
-	rm -f tensorgrad predict
+bigram: bigram.cpp makemore.hpp
+	$(CXX) $(CXXFLAGS) -o bigram bigram.cpp
+	./bigram
 
-.PHONY: run predict clean
+clean:
+	rm -f tensorgrad predict bigram
+
+.PHONY: run predict bigram clean

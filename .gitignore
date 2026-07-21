@@ -2,32 +2,28 @@
 *.o
 *.out
 *.exe
+a.out
 tensorgrad
 predict
-a.out
 bigram
 names
+generate_names
 
 # Debug/profiling
 *.prof
 gmon.out
 callgrind.out.*
 
-# VS Code
+# Editors / IDEs
 .vscode/
-
-# CLion / JetBrains
 .idea/
 
 # CMake
 build/
 cmake-build-*/
 
-# Dataset
+# Dataset (not committed — bring your own)
 data/
-
-# Model checkpoints
-*.bin
 
 # OS files
 .DS_Store

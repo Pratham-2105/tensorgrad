@@ -3,6 +3,8 @@
 #include <random>
 #include <vector>
 
+std::mt19937 gen(std::random_device{}());
+
 i32 sample_row(const std::vector<f32> &row, std::mt19937 &gen) {
   std::uniform_real_distribution<f32> dist(0.0, 1.0);
   f32 r = dist(gen);
@@ -19,9 +21,28 @@ i32 sample_row(const std::vector<f32> &row, std::mt19937 &gen) {
   return 26;
 }
 
+void print_n_random_names(i32 num, std::vector<std::vector<f32>> &P) {
+
+  for (i32 n = 0; n < num; ++n) {
+    std::string name;
+    i32 cur = 0;
+
+    while (true) {
+      i32 next = sample_row(P[cur], gen);
+
+      if (next == 0)
+        break;
+
+      name += itos_(next);
+      cur = next;
+    }
+
+    std::cout << name << '\n';
+  }
+}
+
 int main() {
   std::vector<std::string> names = load_names("data/names.txt");
-  std::mt19937 gen(std::random_device{}());
 
   /*
     std::cout << "count: " << names.size() << '\n';
@@ -106,25 +127,8 @@ int main() {
   std::cout << "P[a][.]   = " << P[1][0] << "  (expect ~0.1961)\n";
 */
 
-  /*
-  for (i32 n = 0; n < 10; ++n) {
-    std::string name;
-    i32 cur = 0;
+  print_n_random_names(50, P);
 
-    while (true) {
-      i32 next = sample_row(P[cur], gen);
-
-      if (next == 0)
-        break;
-
-      name += itos_(next);
-      cur = next;
-    }
-
-    std::cout << name << '\n';
-  }
-
-  */
   f64 accumulate = 0.0;
   i64 count = 0;
 

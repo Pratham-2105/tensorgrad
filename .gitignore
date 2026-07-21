@@ -6,6 +6,7 @@ tensorgrad
 predict
 a.out
 bigram
+names
 
 # Debug/profiling
 *.prof
